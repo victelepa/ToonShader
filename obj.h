@@ -26,9 +26,9 @@ inline bool load_obj(const std::string& path, Mesh& out) {
     // Parse tokens of the form "vi/vt/ni", "vi//ni", or "vi". vt is ignored.
     auto parse_vi = [](const std::string& tok, int& vi, int& ni){
         vi = ni = -1;
-        int s1 = tok.find('/');
+        std::string::size_type s1 = tok.find('/');
         if (s1 == std::string::npos){ vi = std::stoi(tok); return; }
-        int s2 = tok.find('/', s1+1);
+        std::string::size_type s2 = tok.find('/', s1+1);
         vi = std::stoi(tok.substr(0, s1));
         if (s2 != std::string::npos){
             std::string tail = tok.substr(s2+1);
