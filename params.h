@@ -28,6 +28,12 @@ struct mat4 {
     const float& operator()(int r,int c) const {return m[c*4+r];}
 };
 
+/// @brief 矩阵乘以向量
+///
+/// Matrix multiplied by vector
+/// @param M 4x4 矩阵 / 4x4 Matrix
+/// @param v 4x4 向量 / 4x4 Vector
+/// @return 变换后的4D向量 / Transformed 4D Vector
 inline vec4 mul(const mat4& M, const vec4& v){
     vec4 r;
     r.x = M(0,0)*v.x + M(0,1)*v.y + M(0,2)*v.z + M(0,3)*v.w;
@@ -37,10 +43,51 @@ inline vec4 mul(const mat4& M, const vec4& v){
     return r;
 }
 
+/// @brief 建立4x4单元矩阵
+///
+/// Create a 4x4 identity matrix
+/// @return 返回一个4x4的单位矩阵，形式为：
+///
+/// Identity matrix in the form:
+///
+///         [1 0 0 0]
+///
+///         [0 1 0 0]
+///
+///         [0 0 1 0]
+///
+///         [0 0 0 1]
 inline mat4 identity(){ mat4 M{}; for(int i=0;i<16;i++) M.m[i]=0; M(0,0)=M(1,1)=M(2,2)=M(3,3)=1; return M; }
+
+/// @brief 4x4 平移矩阵
+///
+/// Create a 4x4 translation matrix
+/// @param t 平移向量 / Translation vector
+/// @return 4x4 平移矩阵 / 4x4 Translation matrix
 inline mat4 translate(const vec3& t){ mat4 M=identity(); M(0,3)=t.x; M(1,3)=t.y; M(2,3)=t.z; return M; }
+
+/// @brief 4x4 缩放矩阵
+///
+/// Create a 4x4 scaling matrix
+/// @param s 缩放向量 / Scaling vector
+/// @return 4x4 缩放矩阵 / 4x4 Scaling matrix
 inline mat4 scale(const vec3& s){ mat4 M=identity(); M(0,0)=s.x; M(1,1)=s.y; M(2,2)=s.z; return M; }
+
+/// @brief 4x4 绕 Y 轴旋转矩阵
+///
+/// Create a 4x4 rotation matrix around the Y-axis
+/// @param a 旋转角度（弧度） / Rotation angle (radians)
+/// @return 4x4 绕 Y 轴旋转矩阵 / 4x4 Rotation matrix around Y-axis
 inline mat4 rotate_y(float a){ mat4 M=identity(); float c=std::cos(a), s=std::sin(a); M(0,0)= c; M(0,2)= s; M(2,0)=-s; M(2,2)= c; return M; }
+
+/// @brief 4x4 透视投影矩阵
+///
+/// Create a 4x4 perspective projection matrix
+/// @param fovy_deg 垂直(field of view)角度（度） / Vertical field of view angle (degrees)
+/// @param aspect 宽高比 / Aspect ratio
+/// @param znear 近裁剪平面距离 / Near clipping plane distance
+/// @param zfar 远裁剪平面距离 / Far clipping plane distance
+/// @return 4x4 透视投影矩阵 / 4x4 Perspective projection matrix
 inline mat4 perspective(float fovy_deg, float aspect, float znear, float zfar){
     float f = 1.0f / std::tan((fovy_deg*3.14159265f/180.f)*0.5f);
     mat4 M{}; for(int i=0;i<16;i++) M.m[i]=0;
