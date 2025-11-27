@@ -2,6 +2,9 @@
 #include <vector>
 #include <memory>
 #include <fstream>
+#include <string>
+#include <sstream>
+#include <cstring>
 #include "vec3.h"
 #include "ray.h"
 #include "camera.h"
@@ -18,20 +21,108 @@ static bool file_exists(const std::string& path) {
 	return f.good();
 }
 
-int main() {
+static Vec3 parseVec3(const std::string& str) {
+	std::istringstream iss(str);
+	double x, y, z;
+	char c1, c2;
+	if (iss >> x >> c1 >> y >> c2 >> z && c1 == ',' && c2 == ',') {
+		return Vec3(x, y, z);
+	}
+	std::cerr << "Warning: Invalid Vec3 format '" << str << "', using (0,0,0)\n";
+	return Vec3(0, 0, 0);
+}
+
+static void printUsage(const char* progName) {
+	std::cout << "Usage: " << progName << " [OPTIONS]\n";
+	std::cout << "Options:\n";
+	std::cout << "  --obj, -o PATH           OBJ file path (default: Cone.obj)\n";
+	std::cout << "  --lookFrom, -from X,Y,Z  Camera position (default: 4,4,4)\n";
+	std::cout << "  --lookAt, -at X,Y,Z      Camera target (default: 0,0,0)\n";
+	std::cout << "  --vfov, -fov DEGREES     Vertical field of view (default: 45.0)\n";
+	std::cout << "  --scale, -s VALUE        Object scale (default: 0.7)\n";
+	std::cout << "  --translate, -t X,Y,Z    Object translation (default: 1,0.3,1)\n";
+	std::cout << "  --help, -h               Show this help message\n";
+}
+
+int main(int argc, char* argv[]) {
+	// Default values
+	std::string objPath = "Cone.obj";
+	Vec3 lookFrom(4, 4, 4);
+	Vec3 lookAt(0, 0.0, 0);
+	double vfov = 45.0;
+	double scale = 0.7;
+	Vec3 translate(1, 0.3, 1);
+
+	// Parse command line arguments
+	for (int i = 1; i < argc; i++) {
+		std::string arg = argv[i];
+		if (arg == "--help" || arg == "-h") {
+			printUsage(argv[0]);
+			return 0;
+		}
+		else if (arg == "--obj" || arg == "-o") {
+			if (i + 1 < argc) {
+				objPath = argv[++i];
+			} else {
+				std::cerr << "Error: --obj requires a path argument\n";
+				return 1;
+			}
+		}
+		else if (arg == "--lookFrom" || arg == "-from") {
+			if (i + 1 < argc) {
+				lookFrom = parseVec3(argv[++i]);
+			} else {
+				std::cerr << "Error: --lookFrom requires X,Y,Z argument\n";
+				return 1;
+			}
+		}
+		else if (arg == "--lookAt" || arg == "-at") {
+			if (i + 1 < argc) {
+				lookAt = parseVec3(argv[++i]);
+			} else {
+				std::cerr << "Error: --lookAt requires X,Y,Z argument\n";
+				return 1;
+			}
+		}
+		else if (arg == "--vfov" || arg == "-fov") {
+			if (i + 1 < argc) {
+				vfov = std::stod(argv[++i]);
+			} else {
+				std::cerr << "Error: --vfov requires a number argument\n";
+				return 1;
+			}
+		}
+		else if (arg == "--scale" || arg == "-s") {
+			if (i + 1 < argc) {
+				scale = std::stod(argv[++i]);
+			} else {
+				std::cerr << "Error: --scale requires a number argument\n";
+				return 1;
+			}
+		}
+		else if (arg == "--translate" || arg == "-t") {
+			if (i + 1 < argc) {
+				translate = parseVec3(argv[++i]);
+			} else {
+				std::cerr << "Error: --translate requires X,Y,Z argument\n";
+				return 1;
+			}
+		}
+		else {
+			std::cerr << "Unknown option: " << arg << "\n";
+			std::cerr << "Use --help for usage information\n";
+			return 1;
+		}
+	}
 	// Image settings
 	const int width = 640;
 	const int height = 360;
 	const std::string outputPath = "toon_output.ppm";
 
-	// Camera
-	Vec3 lookFrom(4,4,4);
-	Vec3 lookAt(0, 0.0, 0);
+	// Camera (using command line parameters)
 	Vec3 look = (lookAt - lookFrom).normalized();
-	// Vec3 vup = Vec3::cross(look, Vec3(1,0,0)).normalized();
 	Vec3 u = Vec3::cross(look, Vec3(0,1,0)).normalized();
 	Vec3 vup = Vec3::cross(u,look).normalized();
-	double vfov = 45.0;
 	double aspect = double(width) / double(height);
 	Camera cam(lookFrom, lookAt, vup, vfov, aspect);
 
@@ -65,12 +156,11 @@ int main() {
 	// Sphere
 	// objects.push_back(std::make_shared<Sphere>(Vec3(0.0, 0.6, 0.0), 0.6, red));
 
-	std::string objPath = "Cone.obj";
+	// Load OBJ file (using command line parameters)
 	if (file_exists(objPath)) {
-		// Model Y range: [-0.0566, 20.6841], center ~10.3, scaled 0.5 -> center ~5.15
-		// Translate down by ~-4.55 to center at Y=0.6 (camera lookAt)
-		MeshLoader::loadOBJ(objPath, /*scale=*/0.7, /*translate=*/Vec3(1, 0.3, 1), green, objects);
-		std::cout << "Loaded OBJ: " << objPath << "\n";
+		MeshLoader::loadOBJ(objPath, scale, translate, green, objects);
+		std::cout << "Loaded OBJ: " << objPath << " (scale=" << scale << ", translate=" 
+		          << translate.x << "," << translate.y << "," << translate.z << ")\n";
 	}
 	else {
 		std::cout << "OBJ not found (" << objPath << "), continuing without it.\n";

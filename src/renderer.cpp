@@ -18,7 +18,11 @@ bool Renderer::renderPPM(const std::vector<std::shared_ptr<Hittable>>& objects,
 
 	auto idx = [this](int x, int y) { return y * this->width + x; };
 
+	std::cout << "Rendering " << width << "x" << height << " image...\n";
 	for (int y = 0; y < height; ++y) {
+		if (y % 50 == 0) {
+			std::cout << "Progress: " << (y * 100 / height) << "%\n";
+		}
 		double v = (double(y) + 0.5) / double(height);
 		for (int x = 0; x < width; ++x) {
 			double u = (double(x) + 0.5) / double(width);
@@ -52,8 +56,10 @@ bool Renderer::renderPPM(const std::vector<std::shared_ptr<Hittable>>& objects,
 			}
 		}
 	}
+	std::cout << "Progress: 100%\n";
 
 	if (enableDepthEdges) {
+		std::cout << "Applying depth edge detection...\n";
 		Postprocess::applyDepthEdgeOutline(colorBuffer, depthBuffer, width, height, depthEdgeThreshold, Vec3(1.0, 0.0, 0.0)); // Bright red outline
 	}
 
