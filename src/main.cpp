@@ -25,7 +25,7 @@ int main() {
 	const std::string outputPath = "toon_output.ppm";
 
 	// Camera
-	Vec3 lookFrom(2,2,2);
+	Vec3 lookFrom(4,4,4);
 	Vec3 lookAt(0, 0.0, 0);
 	Vec3 look = (lookAt - lookFrom).normalized();
 	// Vec3 vup = Vec3::cross(look, Vec3(1,0,0)).normalized();
@@ -63,18 +63,18 @@ int main() {
 	// Vec3 g(1, 0.1, 1);
 	// objects.push_back(std::make_shared<Triangle>(e, f, g, green));
 	// Sphere
-	objects.push_back(std::make_shared<Sphere>(Vec3(0.0, 0.6, 0.0), 0.6, red));
+	// objects.push_back(std::make_shared<Sphere>(Vec3(0.0, 0.6, 0.0), 0.6, red));
 
-	// std::string objPath = "Cone.obj";
-	// if (file_exists(objPath)) {
-	// 	// Model Y range: [-0.0566, 20.6841], center ~10.3, scaled 0.5 -> center ~5.15
-	// 	// Translate down by ~-4.55 to center at Y=0.6 (camera lookAt)
-	// 	MeshLoader::loadOBJ(objPath, /*scale=*/0.2, /*translate=*/Vec3(1, 0.3, 1), green, objects);
-	// 	std::cout << "Loaded OBJ: " << objPath << "\n";
-	// }
-	// else {
-	// 	std::cout << "OBJ not found (" << objPath << "), continuing without it.\n";
-	// }
+	std::string objPath = "Cone.obj";
+	if (file_exists(objPath)) {
+		// Model Y range: [-0.0566, 20.6841], center ~10.3, scaled 0.5 -> center ~5.15
+		// Translate down by ~-4.55 to center at Y=0.6 (camera lookAt)
+		MeshLoader::loadOBJ(objPath, /*scale=*/0.7, /*translate=*/Vec3(1, 0.3, 1), green, objects);
+		std::cout << "Loaded OBJ: " << objPath << "\n";
+	}
+	else {
+		std::cout << "OBJ not found (" << objPath << "), continuing without it.\n";
+	}
 	
 
 	// Toon parameters with a warm ramp
@@ -93,7 +93,7 @@ int main() {
 
 	Renderer renderer(width, height, cam, light);
 	bool enableDepthEdges = true;
-	double depthEdgeThreshold = 0.05; // tweak to control outline from depth discontinuities
+	double depthEdgeThreshold = 0.7; // Increased threshold for Sobel operator to make edges thinner
 
 	if (renderer.renderPPM(objects, toon, outputPath, enableDepthEdges, depthEdgeThreshold)) {
 		std::cout << "Wrote: " << outputPath << "\n";
