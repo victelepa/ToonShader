@@ -1,4 +1,5 @@
 #include "toon_shader.h"
+#include <iostream>
 
 namespace {
 	static inline int quantize_band(double value01, int bands) {
@@ -18,7 +19,7 @@ Vec3 ToonShader::shade(const HitRecord& hit,
 	// This creates a crisp outline independent of lighting.
 	double nv = std::fabs(Vec3::dot(hit.normal, viewDir));
 	if (nv < params.silhouetteThreshold) {
-		return Vec3(0.0, 0.0, 0.0);
+		return Vec3(0.9, 0.2, 0.9);
 	}
 
 	// Lighting vectors
