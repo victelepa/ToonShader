@@ -7,11 +7,19 @@ void Postprocess::applyDepthEdgeOutline(std::vector<Vec3>& colors,
 	int width, int height,
 	double threshold,
 	const Vec3& outlineColor) {
+	
+	// 如果颜色或深度缓冲区大小不匹配，直接返回
 	if ((int)colors.size() != width * height || (int)depths.size() != width * height) return;
 
 	const double INF = std::numeric_limits<double>::infinity();
 
+	// Lambda函数：根据(x,y)坐标计算一维数组索引
+	/// @param x 像素x坐标
+	/// @param y 像素y坐标
+	/// @return 对应于(x,y)的一维数组索引
 	auto idx = [width](int x, int y) { return y * width + x; };
+
+	// 标记边缘像素的数组
 	std::vector<char> isEdge(width * height, 0);
 
 	// Sobel operator kernels for edge detection

@@ -1,9 +1,12 @@
 #include "triangle.h"
 
+
 Triangle::Triangle(const Vec3& a, const Vec3& b, const Vec3& c, const Material& m)
 	: v0(a), v1(b), v2(c), material(m) {
 	Vec3 e1 = v1 - v0;
 	Vec3 e2 = v2 - v0;
+
+	// 计算三角形的面法线
 	face_normal = Vec3::cross(e1, e2).normalized();
 }
 
