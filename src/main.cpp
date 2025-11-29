@@ -163,33 +163,18 @@ int main(int argc, char* argv[]) {
 	/// @brief 场景中的可击中对象列表
 	std::vector<std::shared_ptr<Hittable>> objects;
 
-	// Ground as two triangles (a large quad)
-	
-	// double s = 3.0;
-	// Vec3 a(-s, 0.0, -s);
-	// Vec3 b(s, 0.0, -s);
-	// Vec3 c(s, 0.0, s);
-	// Vec3 d(-s, 0.0, s);
-	// objects.push_back(std::make_shared<Triangle>(a, b, c, gray));
-	// objects.push_back(std::make_shared<Triangle>(a, c, d, gray));
+	// // Sphere
+	objects.push_back(std::make_shared<Sphere>(Vec3(0.0, 0.6, 0.0), 2, red));
 
-	// Vec3 e(-1, 0.1, 0);
-	// Vec3 f(1, 0.1, -1);
-	// Vec3 g(1, 0.1, 1);
-	// objects.push_back(std::make_shared<Triangle>(e, f, g, green));
-	// Sphere
-	// objects.push_back(std::make_shared<Sphere>(Vec3(0.0, 0.6, 0.0), 0.6, red));
-
-	// Load OBJ file (using command line parameters)
-	// 加载OBJ模型
-	if (file_exists(objPath)) {
-		MeshLoader::loadOBJ(objPath, scale, translate, green, objects);
-		std::cout << "Loaded OBJ: " << objPath << " (scale=" << scale << ", translate=" 
-		          << translate.x << "," << translate.y << "," << translate.z << ")\n";
-	}
-	else {
-		std::cout << "OBJ not found (" << objPath << "), continuing without it.\n";
-	}
+	// Load OBJ file (using command line parameters)  加载OBJ模型
+	// if (file_exists(objPath)) {
+	// 	MeshLoader::loadOBJ(objPath, scale, translate, green, objects);
+	// 	std::cout << "Loaded OBJ: " << objPath << " (scale=" << scale << ", translate=" 
+	// 	          << translate.x << "," << translate.y << "," << translate.z << ")\n";
+	// }
+	// else {
+	// 	std::cout << "OBJ not found (" << objPath << "), continuing without it.\n";
+	// }
 	
 //// 卡通渲染参数
 	// Toon parameters with a warm ramp
@@ -200,11 +185,25 @@ int main(int argc, char* argv[]) {
 	toon.specularThreshold2 = 0.25;
 	toon.specColorA = Vec3(1.0, 1.0, 1.0);
 	toon.specColorB = Vec3(0.8, 0.8, 0.8);
-	toon.rampColors = {
-		Vec3(0.15, 0.10, 0.10), // darkest band
-		Vec3(0.80, 0.55, 0.35), // mid band
-		Vec3(1.00, 0.90, 0.60)  // light band
-	};
+	// toon.rampColors = {
+		Vec3(0.0, 0.1, 0.1),    // (最暗)
+		Vec3(0.2, 0.4, 0.7),   // (中间)
+		Vec3(0.8, 0.7, 0.8)     // (最亮)
+	// };
+	// 颜色位置表，与rampColors一一对应
+	toon.rampPositions = {0.47, 0.5, 0.53}; 
+	// 检查rampColors和rampPositions的个数
+	if (toon.rampPositions.size() != toon.rampColors.size()) {
+		std::cerr << "Error: rampPositions size (" << toon.rampPositions.size() 
+				  << ") does not match rampColors size (" << toon.rampColors.size() 
+				  << "). using default.\n";
+	}
+	if (toon.rampColors.size() == 1) {
+		std::cout << "Warning: Only one rampColor provided. Will use standard diffuse.\n";
+	}
+	
+	// 输出亮度控制：降低整体亮度（1.0=原始，0.5=减半，0.3=更暗）
+	toon.outputBrightness = 0.5; // 降低diffuse亮度
 
 	Renderer renderer(width, height, cam, light);
 	bool enableDepthEdges = true;
