@@ -3,15 +3,19 @@
 
 namespace {
 	/// @brief 量化漫反射值到色带索引
-	/// @param value01 漫反射值，范围[0,1]
-	/// @param bands 色带数量
-	/// @return 量化后的色带索引，范围[0,bands-1]
-	static inline int quantize_band(double value01, int bands) {
-		if (bands <= 1) return value01 > 0.0 ? 1 : 0; // 单一色带特殊处理
-		value01 = std::max(0.0, std::min(1.0, value01));
-		int band = static_cast<int>(value01 * bands); // [0..bands]
-		if (band >= bands) band = bands - 1;
-		return band;
+    /// @param value01 漫反射值，范围[0,1]
+    /// @param bands 色带数量
+    /// @return 量化后的色带索引，范围[0,bands-1]
+    static inline int quantize_band(double value01, int bands) {
+        if (bands <= 1) return value01 > 0.0 ? 1 : 0; // 单一色带特殊处理
+        value01 = std::max(0.0, std::min(1.0, value01));
+        int band = static_cast<int>(value01 * bands); // [0..bands]
+        if (band >= bands) band = bands - 1;
+        return band;
+	}
+	
+	static inline Vec3 lerp(const Vec3& a, const Vec3& b, double t) {
+		return a + (b - a) * t;
 	}
 }
 
@@ -35,29 +39,68 @@ Vec3 ToonShader::shade(const HitRecord& hit,
 	}
 
 	// 光照方向与向量 Lighting vectors
-
 	Vec3 L = (-light.direction).normalized(); //从表面点指向光源的方向（入射光方向） direction from point to light
 	Vec3 N = hit.normal; //击中点法线 already oriented against the ray
 	Vec3 V = viewDir; //从点指向相机的单位向量
 
-	// 漫反射项（Lambert），然后量化到色带 Diffuse term (Lambert), quantized into bands for a toon ramp
-	double ndotl = std::max(0.0, Vec3::dot(N, L)); // N·L，表示被光照亮的程度
-	int bandIdx = quantize_band(ndotl, params.diffuseBands); // 化得到色带索引
-
-	// 根据 rampColors 或灰度回退获得该色带的颜色
+	// // 漫反射项（Lambert），然后量化到色带 Diffuse term (Lambert), quantized into bands for a toon ramp
+	// 漫反射项（Lambert），使用ndotl在rampColors中进行lerp插值
+	double ndotl = std::max(0.0, std::min(1.0, Vec3::dot(N, L)));
+	// int bandIdx = quantize_band(ndotl, params.diffuseBands); // 化得到色带索引
+	// 根据 rampColors 和 rampPositions 进行lerp插值
 	Vec3 bandColor = Vec3(1.0, 1.0, 1.0);
-	if (!params.rampColors.empty() && bandIdx < (int)params.rampColors.size()) {
-		bandColor = params.rampColors[bandIdx];
-	}
-	else {
-		// fallback: grayscale ramp
-		double t = (params.diffuseBands <= 1) ? ndotl : (double)(bandIdx + 1) / (double)(params.diffuseBands);
-		bandColor = Vec3(t, t, t);
+	size_t numColors = params.rampColors.size();
+	
+	if (numColors == 1) {
+		// 只有一个颜色：使用这个颜色 * ndotl
+		bandColor = params.rampColors[0] * ndotl;
+	} else {
+		// 创建局部副本，在首尾添加元素
+		std::vector<Vec3> rampColors = params.rampColors;
+		std::vector<double> rampPositions = params.rampPositions;
+		rampColors.insert(rampColors.begin(), rampColors[0]); // 首部：第一个颜色
+		rampColors.push_back(rampColors[rampColors.size() - 1]); // 尾部：最后一个颜色（注意此时size已经+1）
+		// rampColors.insert(rampColors.begin(), Vec3(0.0, 0.0, 0.0));
+		// rampColors.push_back(Vec3(1.0, 1.0, 1.0));
+		
+		rampPositions.insert(rampPositions.begin(), 0.0); // 首部：0
+		rampPositions.push_back(1.0); // 尾部：1
+		
+		// 现在rampColors和rampPositions的大小都是 numColors + 2
+		size_t extendedSize = rampColors.size();
+		
+		// 找到ndotl在哪个区间内（现在ndotl总是在[0,1]范围内，而rampPositions也是[0, ..., 1]）
+		int idx0 = 0;
+		int idx1 = extendedSize - 1;
+		
+		for (size_t i = 0; i < extendedSize - 1; i++) {
+			if (ndotl >= rampPositions[i] && ndotl <= rampPositions[i + 1]) {
+				idx0 = i;
+				idx1 = i + 1;
+				break;
+			}
+		}
+		
+		// 计算插值参数t
+		double t = 0.0;
+		if (idx0 != idx1) {
+			double pos0 = rampPositions[idx0];
+			double pos1 = rampPositions[idx1];
+			if (pos1 > pos0) {
+				t = (ndotl - pos0) / (pos1 - pos0);
+			}
+		}
+		
+		// 进行lerp插值
+		bandColor = lerp(rampColors[idx0], rampColors[idx1], t);
 	}
 
 	// Base toon diffuse: rampColor modulated by material albedo and light color
 	// 基础漫反射：色带颜色 * 材质漫反射系数 * 光颜色（按分量相乘）
-	Vec3 baseDiffuse = Vec3::hadamard(Vec3::hadamard(bandColor, hit.material->albedo), light.color);
+	// Vec3 baseDiffuse = Vec3::hadamard(Vec3::hadamard(bandColor, hit.material->albedo), light.color);		//直接混色再乘光照
+	// Vec3 baseDiffuse = Vec3::hadamard(Vec3::hadamard(bandColor, light.color), hit.material->albedo);		//先乘光照后混色
+	Vec3 baseDiffuse = Vec3::hadamard(bandColor, light.color);		//不进行混色，直接放到最后相加
+
 
 	// Hard-edge specular from Phong term: compute, then threshold into bands.
 	// 高光项（Phong），计算后量化到色带 
@@ -77,11 +120,14 @@ Vec3 ToonShader::shade(const HitRecord& hit,
 
 	// Small ambient to prevent full black in unlit regions (can be tuned or removed)
 	// 小环境光（防止未被照亮区域全黑）
-	Vec3 ambient = hit.material->albedo * 0.05;
+	Vec3 ambient = hit.material->albedo;
 
 	// Final color = ambient + toon diffuse + toon specular
 	// 最终颜色 = 小环境光 + 基础漫反射 + 高光项
 	Vec3 color = ambient + baseDiffuse + specular;
+	// 应用输出亮度控制
+	color = color * params.outputBrightness;
+	
 	return Vec3::clamp01(color);
 }
 
