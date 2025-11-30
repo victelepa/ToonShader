@@ -185,11 +185,24 @@ int main(int argc, char* argv[]) {
 	toon.specularThreshold2 = 0.25;
 	toon.specColorA = Vec3(1.0, 1.0, 1.0);
 	toon.specColorB = Vec3(0.8, 0.8, 0.8);
-	 toon.rampColors = {
+	toon.rampColors = {
 		Vec3(0.0, 0.1, 0.1),    // (最暗)
 		Vec3(0.2, 0.4, 0.7),   // (中间)
 		Vec3(0.8, 0.7, 0.8)     // (最亮)
 	 };
+
+
+
+	 // ==== Rim Light 初始配置 ====
+	toon.enableRim    = true;
+	toon.rimColor     = Vec3(0.0, 0.0, 1.0);  // 边缘光，可以之后换偏暖/偏冷颜色
+	toon.rimIntensity = 0.6;                  // 0.3–0.8 之间试
+	toon.rimPower     = 1.0;                  // 1.0 = 很软，2–4 = 更卡通
+	toon.rimThreshold = 0.0;                  // 0.0 = 从中心开始渐变，0.1–0.2 更贴边
+
+
+
+
 	// 颜色位置表，与rampColors一一对应
 	toon.rampPositions = {0.47, 0.5, 0.53}; 
 	// 检查rampColors和rampPositions的个数

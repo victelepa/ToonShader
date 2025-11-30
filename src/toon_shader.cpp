@@ -35,7 +35,7 @@ Vec3 ToonShader::shade(const HitRecord& hit,
 	// 当 |dot(N, V)| 接近于0时，视线与法线垂直，认为是轮廓
 	double nv = std::fabs(Vec3::dot(hit.normal, viewDir));
 	if (nv < params.silhouetteThreshold) {
-		return Vec3(0.9, 0.2, 0.9);
+		return Vec3(0.0, 0.0, 0.0);
 	}
 
 	// 光照方向与向量 Lighting vectors
@@ -118,13 +118,39 @@ Vec3 ToonShader::shade(const HitRecord& hit,
 	}
 	// else 0
 
+
+
+
+	// === 3.5 新增：Rim Light / 边缘光 ===
+    Vec3 rimTerm(0.0, 0.0, 0.0);
+    if (params.enableRim) {
+        // 经典 Fresnel 风格边缘光：视线越贴边缘，值越大
+        double ndotv = std::clamp(Vec3::dot(N, V), -1.0, 1.0);
+        double rim   = 1.0 - std::fabs(ndotv);   // 中心 0，边缘 1
+
+        // 可选：减去一个阈值，让更靠边才开始出现边缘光
+        if (params.rimThreshold > 0.0) {
+            rim = std::max(0.0, rim - params.rimThreshold) /
+                  std::max(1e-6, 1.0 - params.rimThreshold);
+        }
+
+        // “硬度”：类似 pow(·, n)，n 越大越贴边；这就是你们的 Toon 控制
+        rim = std::pow(rim, params.rimPower);
+
+        // 强度与颜色
+        rimTerm = params.rimColor * (rim * params.rimIntensity);
+    }
+
+
+
+
 	// Small ambient to prevent full black in unlit regions (can be tuned or removed)
 	// 小环境光（防止未被照亮区域全黑）
 	Vec3 ambient = hit.material->albedo;
 
 	// Final color = ambient + toon diffuse + toon specular
 	// 最终颜色 = 小环境光 + 基础漫反射 + 高光项
-	Vec3 color = ambient + baseDiffuse + specular;
+	Vec3 color = ambient + baseDiffuse + specular + rimTerm;
 	// 应用输出亮度控制
 	color = color * params.outputBrightness;
 	

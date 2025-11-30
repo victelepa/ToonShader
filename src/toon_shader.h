@@ -38,6 +38,15 @@ struct ToonParams {
 	
 	// 最终颜色输出控制：对ambient、baseDiffuse、specular的缩放因子
 	double outputBrightness = 1.0; // 输出亮度，可以降低整体亮度（例如0.5表示减半）
+
+
+	// Rim lighting parameters 边缘光参数
+	bool   enableRim     = true;                 // 是否开启边缘光
+    Vec3   rimColor      = Vec3(1.0, 1.0, 1.0);  // 边缘光颜色
+    double rimIntensity  = 0.5;                  // 强度整体缩放
+    double rimPower      = 2.0;                  // 指数：越大越“贴边”才亮
+    double rimThreshold  = 0.0;
+
 };
 
 namespace ToonShader {
