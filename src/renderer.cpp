@@ -60,7 +60,7 @@ bool Renderer::renderPPM(const std::vector<std::shared_ptr<Hittable>>& objects,
 
 	if (enableDepthEdges) {
 		std::cout << "Applying depth edge detection...\n";
-		Postprocess::applyDepthEdgeOutline(colorBuffer, depthBuffer, width, height, depthEdgeThreshold, Vec3(1.0, 0.0, 0.0)); // Bright red outline
+		Postprocess::applyDepthEdgeOutline(colorBuffer, depthBuffer, width, height, depthEdgeThreshold, Vec3(0.8, 0.55, 0.14)); // Bright red outline
 	}
 
 	writePPM(colorBuffer, outputPath);

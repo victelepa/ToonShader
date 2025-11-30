@@ -35,7 +35,7 @@ Vec3 ToonShader::shade(const HitRecord& hit,
 	// 当 |dot(N, V)| 接近于0时，视线与法线垂直，认为是轮廓
 	double nv = std::fabs(Vec3::dot(hit.normal, viewDir));
 	if (nv < params.silhouetteThreshold) {
-		return Vec3(0.0, 0.0, 0.0);
+		return Vec3(0.8, 0.55, 0.14);
 	}
 
 	// 光照方向与向量 Lighting vectors
