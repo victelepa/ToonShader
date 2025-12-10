@@ -1,32 +1,55 @@
-# README
+# CSCI 580 Final Project — Toon Shader (CPU Ray Tracer)
 
-This week, based on the discussion and inspiration from the class, we adjusted our original plan:  
-Instead of modifying the GPUDriver software rasterization framework provided by the course, we implement the Toon Shader on top of our own **simple ray tracer**.
+**Toon Shading with Ramp, Diffuse, Hard-Edge Specular, Rim Light, and Dual Outlines**
 
-## Work completed this week
+## Team
+- Haoran Jia — Haoranji@usc.edu     banded specular + rim light tuning, integration/support
+- Shengjie Lin — slin0570@usc.edu     rim integration, cleanup/documentation
+- Weibo Xu — weiboxu@usc.edu     ramp diffuse, depth buffer + depth edge support
+- Raymond Zhang — yanzhezh@usc.edu     toon shader core, silhouette integration
 
-- Completed the basic ray tracer framework  
-  - Built a ray-tracing rendering pipeline that supports a camera, spheres, triangles, and simple OBJ model loading.  
-  - Used a single primary ray to render static scenes and provide clean input data for the Toon Shader (intersection position, normal, depth, etc.).
+---
 
-- Implemented the basic Toon Shader shading model  
-  - Added toon-style lighting computation (ambient + diffuse + specular) in the shading stage of the ray tracer.  
-  - Initially integrated toon-style diffuse and color control based on brightness banding.
+## Overview
+This project extends the CSCI 580 ray tracing homework framework with a stylized toon shading model.  
+We replace the original shading, adjust several modules, and add a depth-based post-processing step since the original pipeline does not provide a depth buffer.
 
-- Implemented hard-edge specular highlight  
-  - Discretized the traditional Phong specular term and used thresholds to obtain clear highlight bands.
+---
 
-- Implemented view-dependent silhouette outline  
-  - Detected silhouette regions using the dot product \|N·V\| between the surface normal and the view direction.  
-  - Output black strokes in near-silhouette regions to achieve stable contour lines.
- 
-<img width="1224" height="644" alt="image" src="https://github.com/user-attachments/assets/8192a2ae-3fdb-43e4-9eae-4027bad51820" />
+## Features
+- Toon diffuse with **color ramp** (colors + positions)
+- **Hard-Edge Specular** with two thresholds
+- **Rim Light** (Fresnel-like, view-dependent)
+- **Outlines**
+  - **Silhouette** using \|N·V\|
+  - **Depth Edge** using Sobel on a generated depth buffer
+- OBJ mesh support + basic primitives (e.g., spheres)
 
+---
+
+## Pipeline (High-Level)
+1. Set up camera and allocate buffers  
+2. Parse OBJ into triangles (retain simple primitives)  
+3. Fire primary rays → intersection → toon shading  
+4. Fill fragment buffer  
+5. Apply depth-based outline post-process in place  
+
+---
+
+## Key Parameters
+Configured in `main.cpp` via `ToonParams`:
+- Ramp: `rampColors`, `rampPositions`
+- Specular: `specularThreshold1/2`, `specColorA/B`, material `shininess`
+- Rim: `enableRim`, `rimColor`, `rimIntensity`, `rimPower`, `rimThreshold`
+- Outlines: `silhouetteThreshold`, `outlineColor`, `enableDepthEdges`, `depthEdgeThreshold`
+
+---
+
+<img width="1740" height="908" alt="image" src="https://github.com/user-attachments/assets/bbca865b-a70f-42fe-8ea1-b2d03e3dd7c1" />
+
+---
 
 ## Build & Run
-
-In the project root directory, run the following commands:
-
 ```bash
 clang++ -std=gnu++17 -O2 src/*.cpp -o toon
 ./toon
